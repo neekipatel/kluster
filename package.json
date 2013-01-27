@@ -1,0 +1,16 @@
+{
+  "name": "kluster",
+  "version": "0.0.1",
+  "description": "Wrapper around nodes cluster module",
+  "author": "Neeki Patel <neekipatel@gmail.com>",
+  "main": "index",
+  "dependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "keywords": [
+    "cluster"
+  ],
+  "license": "BSD"
+}
