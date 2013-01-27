@@ -11,7 +11,7 @@ $ npm install kluster
 server.js
 
 ```javascript
-var kluster = require( './kluster' );
+var kluster = require( 'kluster' );
 
 kluster.start( function() {
   console.log( 'test' );
