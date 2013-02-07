@@ -18,6 +18,8 @@ var kluster = module.exports = {
 
 		var worker = cluster.fork();
     	this.workers[ worker.process.pid ] = worker;
+
+		console.log( 'Work Fork: ' + worker.process.pid );
 	},
 
 	kill: function() {
@@ -29,19 +31,17 @@ var kluster = module.exports = {
     	});
 	},
 
-	exit: function() {
+	exit: function( worker ) {
 	
-		var self = this;
+		console.log( 'Work Exit: ' + worker.process.pid );
 
-		cluster.on( 'exit', function( worker ) {
-			delete( self.workers[ worker.process.pid ] );
-    		self.fork();
-  		});
+		delete( this.workers[ worker.process.pid ] );
+    	this.fork();
 	},
 
 	start: function( server ) {
 
-		process.on( 'exit', this.kill.bind( this ) );
+		//process.on( 'exit', this.kill.bind( this ) );
   		process.on( 'uncaughtException', this.kill.bind( this ) );
 
 		if( cluster.isMaster ) {
@@ -53,6 +53,10 @@ var kluster = module.exports = {
 			for( var i = 0; i < this.options.workers; i++ ) {
 				this.fork();
   			}
+
+  			var self = this;
+
+			cluster.on( 'exit', this.exit.bind( this ) );
 		}
 		else {
 			server();

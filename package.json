@@ -1,6 +1,6 @@
 {
   "name": "kluster",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Wrapper around nodes cluster module",
   "author": "Neeki Patel <neekipatel@gmail.com>",
   "main": "index",
@@ -8,9 +8,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/neekipatel/kluster.git"
+  },
   "keywords": [
     "cluster"
   ],
-  "license": "BSD"
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "75eb2d0fc214695be0069522a4a67368cd13e46e"
 }
