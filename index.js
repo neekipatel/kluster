@@ -1,9 +1,7 @@
 var cluster     = require( 'cluster' );
 var domain      = require( 'domain' );
 var fs          = require( 'fs' );
-var dirname     = require( 'path' ).dirname;
-var basename    = require( 'path' ).basename;
-var extname     = require( 'path' ).extname;
+var path        = require( 'path' );
 var numCPUs     = require( 'os' ).cpus().length;
 
 var kluster = module.exports = {
@@ -42,11 +40,19 @@ var kluster = module.exports = {
     // Code from: https://github.com/learnboost/cluster
     reload: function() {
 
+        this.options.ignoreDirectories.forEach( 
+            function( file, index, dirs ) { 
+                dirs[ index ] = path.resolve( file );
+            }
+        );
+
         this.options.watchDirectory.forEach( traverse );
 
         var self = this;
 
         function traverse( file ) {
+
+            file = path.resolve( file );
 
             fs.stat( file, function( err, stat ) {
             
@@ -72,7 +78,7 @@ var kluster = module.exports = {
 
         function watch( file ) {
 
-            if( !~self.options.extensions.indexOf( extname( file ) ) )
+            if( !~self.options.extensions.indexOf( path.extname( file ) ) )
                 return;
 
             fs.watchFile( file, { interval: self.options.interval }, function( curr, prev ) {
