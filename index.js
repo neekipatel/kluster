@@ -1,12 +1,21 @@
-var cluster = require( 'cluster' );
-var numCPUs = require( 'os' ).cpus().length;
+var cluster     = require( 'cluster' );
+var domain      = require( 'domain' );
+var fs          = require( 'fs' );
+var dirname     = require( 'path' ).dirname;
+var basename    = require( 'path' ).basename;
+var extname     = require( 'path' ).extname;
+var numCPUs     = require( 'os' ).cpus().length;
 
 var kluster = module.exports = {
 
 	workers : {},
 
 	options : {
-		workers : numCPUs
+		workers    : numCPUs,
+        extensions : [ '.js' ],
+        ignoreDirectories : [],
+        watchDirectory : [],
+        interval : 100,
 	},
 
 	set: function( key, value ) {
@@ -22,15 +31,6 @@ var kluster = module.exports = {
 		console.log( 'Work Fork: ' + worker.process.pid );
 	},
 
-	kill: function() {
-
-		var self = this;
-
-		Object.keys( this.workers ).forEach( function( pid ) {
-      		self.workers[ pid ].destroy(); 
-    	});
-	},
-
 	exit: function( worker ) {
 	
 		console.log( 'Work Exit: ' + worker.process.pid );
@@ -39,10 +39,62 @@ var kluster = module.exports = {
     	this.fork();
 	},
 
-	start: function( server ) {
+    // Code from: https://github.com/learnboost/cluster
+    reload: function() {
 
-		//process.on( 'exit', this.kill.bind( this ) );
-  		process.on( 'uncaughtException', this.kill.bind( this ) );
+        this.options.watchDirectory.forEach( traverse );
+
+        var self = this;
+
+        function traverse( file ) {
+
+            fs.stat( file, function( err, stat ) {
+            
+                if( ! err ) {
+
+                    if( stat.isDirectory() ) {
+
+                        if( ~self.options.ignoreDirectories.indexOf( file ) ) return;
+
+                        fs.readdir( file, function( err, files ) {
+
+                            files.map( function( f ) {
+                                return file + '/' + f;
+                            }).forEach( traverse );
+                        });
+                    }
+                    else {
+                        watch( file );
+                    }
+                }
+            });
+        }
+
+        function watch( file ) {
+
+            if( !~self.options.extensions.indexOf( extname( file ) ) )
+                return;
+
+            fs.watchFile( file, { interval: self.options.interval }, function( curr, prev ) {
+        
+                if( curr.mtime > prev.mtime ) {
+                    console.log( '\033[36mchanged\033[0m \033[90m- %s\033[0m', file );
+                    self.restartWorkers();
+                }
+            });
+        }
+    },
+
+    restartWorkers: function() {
+
+        for( var index in this.workers ) {
+
+            console.log( 'Restart Worker:' + index );
+            this.workers[ index ].destroy();
+        }
+    },
+
+	start: function( server ) {
 
 		if( cluster.isMaster ) {
 
@@ -54,12 +106,18 @@ var kluster = module.exports = {
 				this.fork();
   			}
 
-  			var self = this;
-
 			cluster.on( 'exit', this.exit.bind( this ) );
+
+            this.reload();
 		}
 		else {
-			server();
+            var serverDomain = domain.create();
+
+            serverDomain.on( 'error', function( err ) { 
+                console.log( 'uncaughtException: ', err ); 
+            });
+
+            serverDomain.run( server );
 		}
 	}
 };
