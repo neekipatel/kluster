@@ -24,7 +24,16 @@ var kluster = module.exports = {
 	fork: function() {
 
 		var worker = cluster.fork();
+        var self = this;
     	this.workers[ worker.process.pid ] = worker;
+
+        worker.on('message', function(msg) {
+            if (msg) {
+                console.log('broadcasting to all workers', msg);
+                self.broadcastMsg(msg);    
+            }  
+        });
+
 
 		console.log( 'Work Fork: ' + worker.process.pid );
 	},
@@ -97,6 +106,13 @@ var kluster = module.exports = {
 
             console.log( 'Restart Worker:' + index );
             this.workers[ index ].destroy();
+        }
+    },
+
+    broadcastMsg: function(msg) {
+        for (var i in this.workers) {
+            var worker = this.workers[i];
+            worker.send(msg);
         }
     },
 
