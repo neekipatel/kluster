@@ -6,140 +6,140 @@ var numCPUs     = require( 'os' ).cpus().length;
 
 var kluster = module.exports = {
 
-	workers : {},
+  workers : {},
 
-	options : {
-		workers    : numCPUs,
-        extensions : [ '.js' ],
-        ignoreDirectories : [],
-        watchDirectory : [],
-        interval : 100,
-	},
+  options : {
+    workers    : numCPUs,
+      extensions : [ '.js' ],
+      ignoreDirectories : [],
+      watchDirectory : [],
+      interval : 100,
+  },
 
-	set: function( key, value ) {
+  set: function( key, value ) {
 
-		this.options[ key ] = value;
-	},
+    this.options[ key ] = value;
+  },
 
-	fork: function() {
+  fork: function() {
 
-		var worker = cluster.fork();
-        var self = this;
-    	this.workers[ worker.process.pid ] = worker;
+    var worker = cluster.fork();
+      var self = this;
+      this.workers[ worker.process.pid ] = worker;
 
-        worker.on('message', function(msg) {
-            if (msg) {
-                console.log('broadcasting to all workers', msg);
-                self.broadcastMsg(msg);    
-            }  
-        });
+      worker.on('message', function(msg) {
+        if (msg) {
+          console.log('broadcasting to all workers', msg);
+          self.broadcastMsg(msg);    
+        }  
+      });
 
+    console.log( 'Work Fork: ' + worker.process.pid );
+  },
 
-		console.log( 'Work Fork: ' + worker.process.pid );
-	},
+  exit: function( worker ) {
+  
+    console.log( 'Work Exit: ' + worker.process.pid );
 
-	exit: function( worker ) {
-	
-		console.log( 'Work Exit: ' + worker.process.pid );
+    delete( this.workers[ worker.process.pid ] );
+    this.fork();
+  },
 
-		delete( this.workers[ worker.process.pid ] );
-    	this.fork();
-	},
+  // Code from: https://github.com/learnboost/cluster
+  reload: function() {
 
-    // Code from: https://github.com/learnboost/cluster
-    reload: function() {
+    this.options.ignoreDirectories.forEach( 
+      function( file, index, dirs ) { 
+        dirs[ index ] = path.resolve( file );
+      }
+    );
 
-        this.options.ignoreDirectories.forEach( 
-            function( file, index, dirs ) { 
-                dirs[ index ] = path.resolve( file );
-            }
-        );
+    this.options.watchDirectory.forEach( traverse );
 
-        this.options.watchDirectory.forEach( traverse );
+    var self = this;
 
-        var self = this;
+    function traverse( file ) {
 
-        function traverse( file ) {
+      file = path.resolve( file );
 
-            file = path.resolve( file );
+      fs.stat( file, function( err, stat ) {
+      
+        if( ! err ) {
 
-            fs.stat( file, function( err, stat ) {
-            
-                if( ! err ) {
+          if( stat.isDirectory() ) {
 
-                    if( stat.isDirectory() ) {
+            if( ~self.options.ignoreDirectories.indexOf( file ) ) return;
 
-                        if( ~self.options.ignoreDirectories.indexOf( file ) ) return;
+            fs.readdir( file, function( err, files ) {
 
-                        fs.readdir( file, function( err, files ) {
-
-                            files.map( function( f ) {
-                                return file + '/' + f;
-                            }).forEach( traverse );
-                        });
-                    }
-                    else {
-                        watch( file );
-                    }
-                }
+              files.map( function( f ) {
+                return file + '/' + f;
+              }).forEach( traverse );
             });
+          }
+          else {
+            watch( file );
+          }
         }
+      });
+    }
 
-        function watch( file ) {
+    function watch( file ) {
 
-            if( !~self.options.extensions.indexOf( path.extname( file ) ) )
-                return;
+      if( !~self.options.extensions.indexOf( path.extname( file ) ) )
+        return;
 
-            fs.watchFile( file, { interval: self.options.interval }, function( curr, prev ) {
-        
-                if( curr.mtime > prev.mtime ) {
-                    console.log( '\033[36mchanged\033[0m \033[90m- %s\033[0m', file );
-                    self.restartWorkers();
-                }
-            });
+      fs.watchFile( file, { interval: self.options.interval }, function( curr, prev ) {
+  
+        if( curr.mtime > prev.mtime ) {
+          console.log( '\033[36mchanged\033[0m \033[90m- %s\033[0m', file );
+          self.restartWorkers();
         }
-    },
+      });
+    }
+  },
 
-    restartWorkers: function() {
+  restartWorkers: function() {
 
-        for( var index in this.workers ) {
+    for( var index in this.workers ) {
 
-            console.log( 'Restart Worker:' + index );
-            this.workers[ index ].destroy();
-        }
-    },
+      console.log( 'Restart Worker:' + index );
+      this.workers[ index ].destroy();
+    }
+  },
 
-    broadcastMsg: function(msg) {
-        for (var i in this.workers) {
-            var worker = this.workers[i];
-            worker.send(msg);
-        }
-    },
+  broadcastMsg: function( msg ) {
+    
+    for( var i in this.workers  {
+        var worker = this.workers[ i ];
+        worker.send( msg );
+    }
+  },
 
-	start: function( server ) {
+  start: function( server ) {
 
-		if( cluster.isMaster ) {
+    if( cluster.isMaster ) {
 
-  			if( this.options.workers < 2 ) {
-  				this.options.workers = 2;
-  			}
+      if( this.options.workers < 2 ) {
+        this.options.workers = 2;
+      }
 
-			for( var i = 0; i < this.options.workers; i++ ) {
-				this.fork();
-  			}
+      for( var i = 0; i < this.options.workers; i++ ) {
+        this.fork();
+      }
 
-			cluster.on( 'exit', this.exit.bind( this ) );
+      cluster.on( 'exit', this.exit.bind( this ) );
 
-            this.reload();
-		}
-		else {
-            var serverDomain = domain.create();
+      this.reload();
+    }
+    else {
+      var serverDomain = domain.create();
 
-            serverDomain.on( 'error', function( err ) { 
-                console.log( 'uncaughtException: ', err ); 
-            });
+      serverDomain.on( 'error', function( err ) { 
+        console.log( 'uncaughtException: ', err ); 
+      });
 
-            serverDomain.run( server );
-		}
-	}
+      serverDomain.run( server );
+    }
+  }
 };
