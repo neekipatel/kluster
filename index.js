@@ -110,7 +110,7 @@ var kluster = module.exports = {
 
   broadcastMsg: function( msg ) {
     
-    for( var i in this.workers  {
+    for( var i in this.workers ) {
         var worker = this.workers[ i ];
         worker.send( msg );
     }
