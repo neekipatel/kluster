@@ -104,7 +104,7 @@ var kluster = module.exports = {
     for( var index in this.workers ) {
 
       console.log( 'Restart Worker:' + index );
-      this.workers[ index ].destroy();
+      this.workers[ index ].disconnect();
     }
   },
 
