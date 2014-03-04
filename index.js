@@ -130,7 +130,7 @@ var kluster = module.exports = {
 
       cluster.on( 'exit', this.exit.bind( this ) );
 
-      this.reload();
+      //this.reload();
     }
     else {
       var serverDomain = domain.create();

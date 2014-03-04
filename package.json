@@ -1,6 +1,6 @@
 {
   "name": "kluster",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Wrapper around nodes cluster module",
   "author": "Neeki Patel <neekipatel@gmail.com>",
   "main": "index",
