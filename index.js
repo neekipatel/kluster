@@ -13,12 +13,14 @@ var kluster = module.exports = {
       extensions : [ '.js' ],
       ignoreDirectories : [],
       watchDirectory : [],
-      interval : 100,
+      interval : 2000
   },
 
   set: function( key, value ) {
 
     this.options[ key ] = value;
+
+    return this;
   },
 
   fork: function() {
@@ -48,6 +50,12 @@ var kluster = module.exports = {
   // Code from: https://github.com/learnboost/cluster
   reload: function() {
 
+    if (this.options.watchDirectory.length === 0) {
+      return;
+    }
+
+    console.log( 'Watch Directory Enabled' );
+
     this.options.ignoreDirectories.forEach( 
       function( file, index, dirs ) { 
         dirs[ index ] = path.resolve( file );
@@ -68,7 +76,10 @@ var kluster = module.exports = {
 
           if( stat.isDirectory() ) {
 
-            if( ~self.options.ignoreDirectories.indexOf( file ) ) return;
+            if( ~self.options.ignoreDirectories.indexOf( file ) ){
+              console.log( 'Ignore Directory: ' + file );
+              return;
+            }
 
             fs.readdir( file, function( err, files ) {
 
@@ -88,6 +99,8 @@ var kluster = module.exports = {
 
       if( !~self.options.extensions.indexOf( path.extname( file ) ) )
         return;
+
+      console.log( 'Watch: ' + file );
 
       fs.watchFile( file, { interval: self.options.interval }, function( curr, prev ) {
   
@@ -130,7 +143,7 @@ var kluster = module.exports = {
 
       cluster.on( 'exit', this.exit.bind( this ) );
 
-      //this.reload();
+      this.reload();
     }
     else {
       var serverDomain = domain.create();
