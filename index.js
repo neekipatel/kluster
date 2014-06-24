@@ -9,7 +9,7 @@ var kluster = module.exports = {
   workers : {},
 
   options : {
-    workers    : numCPUs,
+    workers    : numCPUs * 2,
       extensions : [ '.js' ],
       ignoreDirectories : [],
       watchDirectory : [],
