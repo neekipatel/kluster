@@ -149,7 +149,7 @@ var kluster = module.exports = {
       var serverDomain = domain.create();
 
       serverDomain.on( 'error', function( err ) { 
-        console.log( 'uncaughtException: ', err ); 
+        console.log( 'uncaughtException: ', err.stack ); 
       });
 
       serverDomain.run( server );
